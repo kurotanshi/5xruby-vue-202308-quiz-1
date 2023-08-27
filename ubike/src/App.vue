@@ -15,54 +15,56 @@ import { ref, computed, watch } from 'vue';
 
 const uBikeStops = ref([]);
 
-fetch('https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json')
-  .then(res => res.text())
-  .then(data => {
+fetch(
+  'https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json'
+)
+  .then((res) => res.text())
+  .then((data) => {
     uBikeStops.value = JSON.parse(data);
   });
 
-const timeFormat = (val) => {
-  // 時間格式
-  const pattern = /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/;
-  return val.replace(pattern, '$1/$2/$3 $4:$5:$6');
-};
+const searchString = ref('');
+
+const filteredData = computed(() => {
+  return uBikeStops.value.filter((s) => s.sna.includes(searchString.value));
+});
 </script>
 
 <template>
-<div class="app">
-  <p>
-    站點名稱搜尋: <input type="text">
-  </p>
+  <div class="app">
+    <p>站點名稱搜尋: <input type="text" v-model="searchString" /></p>
 
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>場站名稱</th>
-        <th>場站區域</th>
-        <th>目前可用車輛
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
-        </th>
-        <th>總停車格
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
-        </th>
-        <th>資料更新時間</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="s in uBikeStops" :key="s.sno">
-        <td>{{ s.sno }}</td>
-        <td>{{ s.sna }}</td>
-        <td>{{ s.sarea }}</td>
-        <td>{{ s.sbi }}</td>
-        <td>{{ s.tot }}</td>
-        <td>{{ timeFormat(s.mday) }}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>場站名稱</th>
+          <th>場站區域</th>
+          <th>
+            目前可用車輛
+            <i class="fa fa-sort-asc" aria-hidden="true"></i>
+            <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          </th>
+          <th>
+            總停車格
+            <i class="fa fa-sort-asc" aria-hidden="true"></i>
+            <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          </th>
+          <th>資料更新時間</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="s in filteredData" :key="s.sno">
+          <td>{{ s.sno }}</td>
+          <td>{{ s.sna }}</td>
+          <td>{{ s.sarea }}</td>
+          <td>{{ s.sbi }}</td>
+          <td>{{ s.tot }}</td>
+          <td>{{ s.mday }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <style scoped>
