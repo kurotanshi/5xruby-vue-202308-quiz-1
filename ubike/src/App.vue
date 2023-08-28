@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 
 // 修改這份 YouBike 即時資訊表，並加上
 // 1. 站點名稱搜尋
@@ -23,11 +23,42 @@ fetch(
     uBikeStops.value = JSON.parse(data);
   });
 
+// 站點名稱搜尋
 const searchString = ref('');
 
 const filteredData = computed(() => {
   return uBikeStops.value.filter((s) => s.sna.includes(searchString.value));
 });
+
+// 搜尋字串有變動的話 reset columnOrderBy object
+watch(searchString, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    columnOrderBy.sbi = '';
+    columnOrderBy.tot = '';
+  }
+});
+
+// 排序
+const columnOrderBy = reactive({
+  sbi: '',
+  tot: '',
+});
+
+const sortColumn = (column) => {
+  for (const key in columnOrderBy) {
+    if (column !== key) {
+      columnOrderBy[key] = '';
+    }
+  }
+
+  if (columnOrderBy[column] === '' || columnOrderBy[column] === 'asc') {
+    filteredData.value.sort((a, b) => a[column] - b[column]);
+    columnOrderBy[column] = 'desc';
+  } else {
+    filteredData.value.sort((a, b) => b[column] - a[column]);
+    columnOrderBy[column] = 'asc';
+  }
+};
 </script>
 
 <template>
@@ -40,15 +71,31 @@ const filteredData = computed(() => {
           <th>#</th>
           <th>場站名稱</th>
           <th>場站區域</th>
-          <th>
+          <th @click="sortColumn('sbi')" class="sort">
             目前可用車輛
-            <i class="fa fa-sort-asc" aria-hidden="true"></i>
-            <i class="fa fa-sort-desc" aria-hidden="true"></i>
+            <i
+              class="fa fa-sort-asc"
+              :class="{ active: columnOrderBy['sbi'] === 'desc' }"
+              aria-hidden="true"
+            ></i>
+            <i
+              class="fa fa-sort-desc"
+              :class="{ active: columnOrderBy['sbi'] === 'asc' }"
+              aria-hidden="true"
+            ></i>
           </th>
-          <th>
+          <th @click="sortColumn('tot')" class="sort">
             總停車格
-            <i class="fa fa-sort-asc" aria-hidden="true"></i>
-            <i class="fa fa-sort-desc" aria-hidden="true"></i>
+            <i
+              class="fa fa-sort-asc"
+              :class="{ active: columnOrderBy['tot'] === 'desc' }"
+              aria-hidden="true"
+            ></i>
+            <i
+              class="fa fa-sort-desc"
+              :class="{ active: columnOrderBy['tot'] === 'asc' }"
+              aria-hidden="true"
+            ></i>
           </th>
           <th>資料更新時間</th>
         </tr>
@@ -70,5 +117,13 @@ const filteredData = computed(() => {
 <style scoped>
 .app {
   padding: 1rem;
+}
+
+.sort {
+  cursor: pointer;
+}
+
+.active {
+  color: #3ba776;
 }
 </style>
