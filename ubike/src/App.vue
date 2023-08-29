@@ -26,12 +26,19 @@ const timeFormat = (val) => {
   const pattern = /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/;
   return val.replace(pattern, '$1/$2/$3 $4:$5:$6');
 };
+
+const filterContent = ref(''); //搜尋內容
+
+const search = computed(() => {
+  return filterContent !== '' ? uBikeStops.value.filter((item,index) => item.sna.includes(filterContent.value)) : uBikeStops.value
+});
+
 </script>
 
 <template>
 <div class="app">
   <p>
-    站點名稱搜尋: <input type="text">
+    站點名稱搜尋: <input type="text" @change="search" v-model="filterContent">
   </p>
 
   <table class="table table-striped">
@@ -52,7 +59,7 @@ const timeFormat = (val) => {
       </tr>
     </thead>
     <tbody>
-      <tr v-for="s in uBikeStops" :key="s.sno">
+      <tr v-for="s in search" :key="s.sno">
         <td>{{ s.sno }}</td>
         <td>{{ s.sna }}</td>
         <td>{{ s.sarea }}</td>
