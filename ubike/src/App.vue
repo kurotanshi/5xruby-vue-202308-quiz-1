@@ -86,7 +86,12 @@ const sortDescOfTot = function(event){
     </tbody>
   </table>
 </div>
-
+<div class="pagination">
+    <ul>
+    <li><a href="#">Prev</a></li>    
+    <li><a href="#">Next</a></li>
+    </ul>
+</div>
 </template>
 
 <style scoped>
