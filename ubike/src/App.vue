@@ -13,6 +13,7 @@ import { ref, computed, watch,} from 'vue'
 // lat：緯度、 lng：經度、 ar：地(中文)、 sareaen：場站區域(英文)、
 // snaen：場站名稱(英文)、 aren：地址(英文)、 bemp：空位數量、 act：全站禁用狀態
 
+// 渲染用陣列
 const uBikeStops = ref([])
 
 fetch(
@@ -23,8 +24,7 @@ fetch(
     uBikeStops.value = JSON.parse(data)
     uBikeData.value = JSON.parse(data)
     // 非同步 頁籤先在這處理
-    pages.value = Math.ceil(uBikeData.value.length / 20)-50
-    console.log(pages.value)
+    pages.value = Math.ceil(uBikeData.value.length / 20)
     uBikeStops.value.length = 20
   })
 
@@ -35,7 +35,7 @@ const timeFormat = (val) => {
 }
 
 // 搜尋站名
-const uBikeData = ref( )
+const uBikeData = ref()   //操作用陣列
 const snaSearch = ref('')
 
 watch(snaSearch, (newSna) => {
@@ -43,6 +43,7 @@ watch(snaSearch, (newSna) => {
     (v) => v.sna.indexOf(newSna) !== -1
   )
   uBikeStops.value = searchStops
+  uBikeStops.value.length = 20
   console.log(uBikeStops.value)
 })
 
@@ -62,12 +63,14 @@ const sort = (sortWay, sortFor) => {
 
 // 頁籤
   const pages = ref()
+  const pageLimit =ref(10)
   const pageFor = (page) =>{
     uBikeStops.value = uBikeData.value.slice((page-1)*20,((page-1)*20)+19) 
   }
   const pageMove = (way) =>{
-    if (pages.value <= 0)return
-    way === 'left' ?pages.value = pages.value -10 :pages.value= pages.value + 10
+    if (way === 'left' && pageLimit.value === 10)return
+    if (way === 'right' && pageLimit.value >= pages.value )return
+    way === 'left' ?pageLimit.value = pageLimit.value -10 :pageLimit.value= pageLimit.value + 10
   }
 
 </script>
@@ -125,7 +128,7 @@ const sort = (sortWay, sortFor) => {
   </div>
   <ul>
     <li class="pager"><a href="#" @click="pageMove('left')"> &lt; </a></li>
-    <li class="pager" v-for="n of pages">
+    <li class="pager" v-for="n of pages" v-show="pageLimit-10 < n && n <=pageLimit">
       <!-- n 從 1 開始計算 -->
       <a href="#" @click="pageFor(n)">{{ n }}</a>
     </li>
