@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch} from 'vue';
 
 // 修改這份 YouBike 即時資訊表，並加上
 // 1. 站點名稱搜尋
@@ -15,23 +15,43 @@ import { ref, computed, watch } from 'vue';
 
 const uBikeStops = ref([]);
 
+// const uBikeData = ref([])
+// const snaSearch = ref('')
+
 fetch('https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json')
   .then(res => res.text())
   .then(data => {
     uBikeStops.value = JSON.parse(data);
+    uBikeData.value = JSON.parse(data)
   });
-
+  
 const timeFormat = (val) => {
   // 時間格式
   const pattern = /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/;
   return val.replace(pattern, '$1/$2/$3 $4:$5:$6');
 };
+
+// 搜尋站名
+
+const uBikeData = ref([])
+const snaSearch = ref('')
+
+watch(snaSearch,(newSna)=>{
+  const searchStops = uBikeData.value.filter((v)=>v.sna.indexOf(newSna) !== -1)
+  uBikeStops.value = searchStops
+})
+
+// const newUBikeStops = computed(()=>{return uBikeStops.value.filter((v)=>{
+//   return v.sna.indexOf(snaSearch.value) !== -1
+// })})
+
+
 </script>
 
 <template>
 <div class="app">
   <p>
-    站點名稱搜尋: <input type="text">
+    站點名稱搜尋: <input type="text" v-model="snaSearch">
   </p>
 
   <table class="table table-striped">
