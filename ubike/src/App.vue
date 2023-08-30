@@ -33,6 +33,22 @@ const search = computed(() => {
   return filterContent !== '' ? uBikeStops.value.filter((item,index) => item.sna.includes(filterContent.value)) : uBikeStops.value
 });
 
+const sortAscOfSbi = function(event){
+    uBikeStops.value.sort((a,b) => a.sbi - b.sbi);
+}
+
+const sortDescOfSbi = function(event){
+  uBikeStops.value.sort((a,b) => b.sbi - a.sbi);
+}
+
+const sortAscOfTot = function(event){
+  uBikeStops.value.sort((a,b) => a.tot - b.tot);
+}
+
+const sortDescOfTot = function(event){
+  uBikeStops.value.sort((a,b) => b.tot - a.tot);
+}
+
 </script>
 
 <template>
@@ -48,12 +64,12 @@ const search = computed(() => {
         <th>場站名稱</th>
         <th>場站區域</th>
         <th>目前可用車輛
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="sortAscOfSbi($event)"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="sortDescOfSbi($event)"></i>
         </th>
         <th>總停車格
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="sortAscOfTot($event)"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="sortDescOfTot($event)"></i>
         </th>
         <th>資料更新時間</th>
       </tr>
@@ -70,6 +86,7 @@ const search = computed(() => {
     </tbody>
   </table>
 </div>
+
 </template>
 
 <style scoped>
