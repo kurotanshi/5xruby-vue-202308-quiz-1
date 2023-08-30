@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 // 修改這份 YouBike 即時資訊表，並加上
 // 1. 站點名稱搜尋
@@ -13,6 +13,17 @@ import { ref, reactive, computed, watch } from 'vue';
 // lat：緯度、 lng：經度、 ar：地(中文)、 sareaen：場站區域(英文)、
 // snaen：場站名稱(英文)、 aren：地址(英文)、 bemp：空位數量、 act：全站禁用狀態
 
+const ITEMS_PER_PAGE = 20; // 一頁二十筆資料
+const activePage = ref(1); // 當前分頁
+let itemsInPage = ref([]); // 分頁資料
+let totalPages; // 總分頁數
+let totalPagesArray; // 建立一個跟"總分頁數"相同長度的連續數字陣列
+
+const ITEMS_PER_NAV = 10; // 一次顯示十個數字在導覽列
+const activeNav = ref(1);
+let itemsInNav = ref([]);
+let totalNav;
+
 const uBikeStops = ref([]);
 
 fetch(
@@ -23,47 +34,138 @@ fetch(
     uBikeStops.value = JSON.parse(data);
   });
 
-// 站點名稱搜尋
+// 搜尋字串
 const searchString = ref('');
 
 const filteredData = computed(() => {
-  return uBikeStops.value.filter((s) => s.sna.includes(searchString.value));
+  // 搜尋
+  const tempArr = uBikeStops.value.filter((s) =>
+    s.sna.includes(searchString.value)
+  );
+
+  // 排序
+  if (columnOrderBy.value === '' || columnOrderBy.value === 'asc') {
+    tempArr.sort((a, b) => a[column.value] - b[column.value]);
+  } else {
+    tempArr.sort((a, b) => b[column.value] - a[column.value]);
+  }
+
+  return tempArr;
 });
 
-// 搜尋字串有變動的話 reset columnOrderBy object
+const column = ref(''); // 要排序的欄位
+const columnOrderBy = ref(''); // 排序方法
+
+const sortColumn = (col) => {
+  if (column.value !== col) {
+    columnOrderBy.value = '';
+  }
+
+  column.value = col;
+
+  reset();
+
+  if (columnOrderBy.value === 'asc') {
+    columnOrderBy.value = 'desc';
+  } else {
+    columnOrderBy.value = 'asc';
+  }
+};
+
+const directionNav = ref('');
+
+// 後十頁
+const nextNav = () => {
+  if (activeNav.value < totalNav) {
+    activeNav.value++;
+    directionNav.value = 'next';
+  }
+};
+
+// 前十頁
+const previousNav = () => {
+  if (activeNav.value > 1) {
+    activeNav.value--;
+    directionNav.value = 'previous';
+  }
+};
+
+const setActivePage = (n) => (activePage.value = n);
+
+const reset = () => {
+  activePage.value = 1;
+  activeNav.value = 1;
+  directionNav.value = '';
+};
+
+// 搜尋字串有變動的話 reset
 watch(searchString, (newVal, oldVal) => {
   if (newVal !== oldVal) {
-    columnOrderBy.sbi = '';
-    columnOrderBy.tot = '';
+    column.value = '';
+    columnOrderBy.value = '';
+
+    reset();
   }
 });
 
-// 排序
-const columnOrderBy = reactive({
-  sbi: '',
-  tot: '',
-});
+watch([filteredData, activeNav, activePage], (newVal, oldVal) => {
+  totalPages = Math.ceil(newVal[0].length / ITEMS_PER_PAGE);
+  totalPagesArray = [...Array(totalPages).keys()].map((i) => i + 1);
 
-const sortColumn = (column) => {
-  for (const key in columnOrderBy) {
-    if (column !== key) {
-      columnOrderBy[key] = '';
+  totalNav = Math.ceil(totalPages / ITEMS_PER_NAV);
+
+  itemsInNav.value = totalPagesArray.slice(
+    (newVal[1] - 1) * ITEMS_PER_NAV,
+    newVal[1] * ITEMS_PER_NAV
+  );
+
+  if (newVal[1] !== oldVal[1]) {
+    if (directionNav.value === 'next') {
+      activePage.value = itemsInNav.value[0];
+    } else if (directionNav.value === 'previous') {
+      activePage.value = itemsInNav.value[itemsInNav.value.length - 1];
+    } else {
+      activePage.value = 1;
     }
   }
 
-  if (columnOrderBy[column] === '' || columnOrderBy[column] === 'asc') {
-    filteredData.value.sort((a, b) => a[column] - b[column]);
-    columnOrderBy[column] = 'desc';
-  } else {
-    filteredData.value.sort((a, b) => b[column] - a[column]);
-    columnOrderBy[column] = 'asc';
-  }
-};
+  itemsInPage.value = newVal[0].slice(
+    (newVal[2] - 1) * ITEMS_PER_PAGE,
+    newVal[2] * ITEMS_PER_PAGE
+  );
+});
 </script>
 
 <template>
   <div class="app">
     <p>站點名稱搜尋: <input type="text" v-model="searchString" /></p>
+
+    <nav aria-label="Page navigation">
+      <ul class="pagination">
+        <li
+          class="page-item"
+          :class="{ disabled: activeNav <= 1 }"
+          @click="previousNav"
+        >
+          <a class="page-link" href="javascript:;">前十頁</a>
+        </li>
+        <li
+          class="page-item"
+          :class="{ active: n === activePage }"
+          v-for="n in itemsInNav"
+          @click="setActivePage(n)"
+        >
+          <a class="page-link" href="javascript:;">{{ n }}</a>
+        </li>
+        <li
+          class="page-item"
+          :class="{ disabled: activeNav >= totalNav }"
+          @click="nextNav"
+        >
+          <a class="page-link" href="javascript:;">後十頁</a>
+        </li>
+      </ul>
+    </nav>
 
     <table class="table table-striped">
       <thead>
@@ -75,12 +177,12 @@ const sortColumn = (column) => {
             目前可用車輛
             <i
               class="fa fa-sort-asc"
-              :class="{ active: columnOrderBy['sbi'] === 'desc' }"
+              :class="{ active: column === 'sbi' && columnOrderBy === 'asc' }"
               aria-hidden="true"
             ></i>
             <i
               class="fa fa-sort-desc"
-              :class="{ active: columnOrderBy['sbi'] === 'asc' }"
+              :class="{ active: column === 'sbi' && columnOrderBy === 'desc' }"
               aria-hidden="true"
             ></i>
           </th>
@@ -88,12 +190,12 @@ const sortColumn = (column) => {
             總停車格
             <i
               class="fa fa-sort-asc"
-              :class="{ active: columnOrderBy['tot'] === 'desc' }"
+              :class="{ active: column === 'tot' && columnOrderBy === 'asc' }"
               aria-hidden="true"
             ></i>
             <i
               class="fa fa-sort-desc"
-              :class="{ active: columnOrderBy['tot'] === 'asc' }"
+              :class="{ active: column === 'tot' && columnOrderBy === 'desc' }"
               aria-hidden="true"
             ></i>
           </th>
@@ -101,7 +203,7 @@ const sortColumn = (column) => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="s in filteredData" :key="s.sno">
+        <tr v-for="s in itemsInPage" :key="s.sno">
           <td>{{ s.sno }}</td>
           <td>{{ s.sna }}</td>
           <td>{{ s.sarea }}</td>
@@ -124,6 +226,6 @@ const sortColumn = (column) => {
 }
 
 .active {
-  color: #3ba776;
+  color: var(--primary);
 }
 </style>
