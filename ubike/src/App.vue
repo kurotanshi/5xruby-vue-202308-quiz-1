@@ -39,11 +39,13 @@ const uBikeData = ref()   //操作用陣列
 const snaSearch = ref('')
 
 watch(snaSearch, (newSna) => {
+  console.log(newSna)
   const searchStops = uBikeData.value.filter(
     (v) => v.sna.indexOf(newSna) !== -1
   )
   uBikeStops.value = searchStops
-  uBikeStops.value.length = 20
+  pages.value = Math.ceil(searchStops.length / 20)
+  uBikeStops.value.length >=20 ?  uBikeStops.value.length=20 : ''
 })
 
 //排序
