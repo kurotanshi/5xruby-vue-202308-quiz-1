@@ -14,12 +14,63 @@ import { ref, computed, watch } from 'vue';
 // snaen：場站名稱(英文)、 aren：地址(英文)、 bemp：空位數量、 act：全站禁用狀態
 
 const uBikeStops = ref([]);
-
+const query = ref('');
+const page = ref(1);
 fetch('https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json')
   .then(res => res.text())
   .then(data => {
     uBikeStops.value = JSON.parse(data);
+    console.log(uBikeStops.value[1].sna);
+    console.log(uBikeStops.value.length);
   });
+
+const filteredStops = computed(()=>{
+  // console.log(query);
+  return query.value.length === 0 ?
+    uBikeStops.value.slice((page.value - 1) * perPage, page.value * perPage) :
+    uBikeStops.value.filter(stops => stops.sna.includes(query.value)).slice((page.value - 1) * perPage, page.value * perPage)
+    
+})
+
+const sbiSortASC = ()=>{
+  uBikeStops.value.sort((a, b) => parseInt(a.sbi) - parseInt(b.sbi))
+}
+
+const sbiSortDESC = ()=>{
+  uBikeStops.value.sort((a, b) => parseInt(b.sbi) - parseInt(a.sbi))
+  // if(a < b){
+  //   return 1; // 正數時，後面的數放在前面
+  // } else {
+  //   return -1 // 負數時，前面的數放在前面
+  // }
+}
+
+const totSortASC = ()=>{
+  uBikeStops.value.sort((a, b) => parseInt(a.tot) - parseInt(b.tot))
+}
+
+const totSortDESC = ()=>{
+  uBikeStops.value.sort((a, b) => parseInt(b.tot) - parseInt(a.tot))
+}
+
+
+const perPage = 20;
+
+const nextPage = () => {
+  if (page.value !== Math.ceil(uBikeStops.value.length / perPage)) {
+    page.value += 1;
+  }
+};
+
+const backPage = () => {
+  if (page.value !== 1) {
+    page.value -= 1;
+  }
+};
+
+const goToPage = (numPage) => {
+  page.value = numPage;
+};
 
 const timeFormat = (val) => {
   // 時間格式
@@ -31,7 +82,7 @@ const timeFormat = (val) => {
 <template>
 <div class="app">
   <p>
-    站點名稱搜尋: <input type="text">
+    站點名稱搜尋: <input type="text" v-model="query">
   </p>
 
   <table class="table table-striped">
@@ -41,18 +92,18 @@ const timeFormat = (val) => {
         <th>場站名稱</th>
         <th>場站區域</th>
         <th>目前可用車輛
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="sbiSortASC()"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="sbiSortDESC()"></i>
         </th>
         <th>總停車格
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="totSortASC()"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="totSortDESC()"></i>
         </th>
         <th>資料更新時間</th>
       </tr>
     </thead>
     <tbody>
-      <tr v-for="s in uBikeStops" :key="s.sno">
+      <tr v-for="s in filteredStops" :key="s.sno">
         <td>{{ s.sno }}</td>
         <td>{{ s.sna }}</td>
         <td>{{ s.sarea }}</td>
@@ -62,6 +113,15 @@ const timeFormat = (val) => {
       </tr>
     </tbody>
   </table>
+  <button @click="backPage">prev</button>
+  <button
+    v-for="item in Math.ceil(uBikeStops.length / perPage)"
+    :key="item"
+    @click="() => goToPage(item)"
+  >
+    {{ item }}
+  </button>
+  <button @click="nextPage">next</button>
 </div>
 </template>
 

@@ -37,14 +37,15 @@ const starChange = (id, num) =>{
         </div>
         <div class="movie-item-rating-wrapper">
           <span class="movie-item-rating-text"> Rating: {{item.rating}} </span>
-          
-          <div class="movie-item-star-icon-wrapper" v-for=" hoshi of 5">
+          <div v-for=" hoshi of 5">
+            <div class="movie-item-star-icon-wrapper">
             <button class="text-yellow-500 movie-item-star-icon-button" @click="starChange(idx, hoshi)" v-if="hoshi <= item.rating">
               <StarIcon class="movie-item-star-icon" />
             </button>
-            <button class="text-gray-500 movie-item-star-icon-button" @click="starChange(idx, hoshi)" v-if="hoshi > item.rating">
+            <button class="text-gray-500 movie-item-star-icon-button" @click="starChange(idx, hoshi)" v-else>
               <StarIcon class="movie-item-star-icon" />
             </button>
+          </div>
           </div>
         </div>
       </div>
