@@ -17,44 +17,68 @@ const uBikeStops = ref([]);
 const inputName = ref('');
 const sbiAsc = ref(false);
 const totAsc = ref(false);
+//暫存總頁數
+let datas = ref(0);
+
+//分頁功能
+const perpage = 20; //顯示資料筆數
+const currentPage = ref(1); //記錄當下頁數
+
 fetch('https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json')
   .then(res => res.text())
   .then(data => {
     uBikeStops.value = JSON.parse(data);
   });
 
-  // 搜尋排序
+// 搜尋排序
 const filterStops = computed({
-  get: () => inputName.value ? uBikeStops.value.filter(item => item.sna.match(inputName.value)) : uBikeStops.value,
+  get: () => {
+    if(inputName.value) {
+      datas.value = uBikeStops.value.filter(item => item.sna.match(inputName.value)).length;
+      return uBikeStops.value.filter(item => item.sna.match(inputName.value)).slice(pageStart.value,pageEnd.value);
+    }else{
+      datas.value = uBikeStops.value.length;
+      return uBikeStops.value.slice(pageStart.value,pageEnd.value);
+    }
+  },
   set: (val) => {
-    if(val.choose == 'sbi'){
-      if (val.sort) {
-        uBikeStops.value.sort( (x,y) => x.sbi > y.sbi ? 1: -1 )
-      }else{
-        uBikeStops.value.sort( (x,y) => x.sbi < y.sbi ? 1: -1 )
-      }
-    }
-    if(val.choose == 'tot'){
-      if(val.sort) {
-        uBikeStops.value.sort( (x,y) => x.tot > y.tot ? 1: -1 )
-      }else{
-        uBikeStops.value.sort( (x,y) => x.tot < y.tot ? 1: -1 )
-      }
-    }
+    return val;
   }
-})
+  }
+)
 
-// click 觸發排序 
-const sbiSort = () => {
-  sbiAsc.value = !sbiAsc.value;
-  filterStops.value = { sort:sbiAsc.value, choose:'sbi' }
-  
-}
-const totSort = () => {
-  totAsc.value = !totAsc.value;
-  filterStops.value = { sort:totAsc.value, choose:'tot' }
+//處理指定排序
+function sortType(type){
+  if(type == 'sbi'){
+    sbiAsc.value = !sbiAsc.value;
+    let sbiSort = ref(sbiAsc.value ? 
+    filterStops.value.sort((x,y) => x.sbi > y.sbi ? 1:-1) 
+    : filterStops.value.sort((x,y) => x.sbi < y.sbi ? 1:-1))
+    filterStops.value = sbiSort.value;
+  }
+  if(type == 'tot'){
+    totAsc.value = !totAsc.value;
+    let totSort = ref(totAsc.value ? 
+    filterStops.value.sort((x,y) => x.tot > y.tot ? 1:-1) 
+    : filterStops.value.sort((x,y) => x.tot < y.tot ? 1:-1));
+    filterStops.value = totSort.value;
+  }
 }
 
+
+//總頁數
+const totalPage = computed(()=>Math.ceil(datas.value / perpage));
+//該頁第一個index值
+const pageStart = computed(()=>(currentPage.value - 1)* perpage); 
+//該頁最後index值
+const pageEnd = computed(()=> currentPage.value * perpage);
+const setPage = (page) => {
+  if(page <= 0 || page > totalPage.value){
+    return ;
+  }else{
+    currentPage.value = page;
+  }
+}
 
 const timeFormat = (val) => {
   // 時間格式
@@ -70,7 +94,7 @@ const timeFormat = (val) => {
   <p>
     站點名稱搜尋: <input type="text" v-model="inputName">
   </p>
-
+  <p>{{ totalPage}} {{ pageStart }} {{ pageEnd  }} {{ currentPage }}</p>
   <table class="table table-striped">
     <thead>
       <tr>
@@ -78,10 +102,16 @@ const timeFormat = (val) => {
         <th>場站名稱</th>
         <th>場站區域</th>
         <th>目前可用車輛
-          <a href=""  @click.prevent="sbiSort"><i class="fa fa-sort-asc" aria-hidden="true"></i><i class="fa fa-sort-desc" aria-hidden="true"></i></a>
+          <a href=""  @click.prevent="sortType('sbi')">
+          <i class="fa fa-sort-asc"  v-if="sbiAsc == false" aria-hidden="true"></i>
+          <i class="fa fa-sort-desc" v-if="sbiAsc == true" aria-hidden="true"></i>
+          </a>
         </th>
         <th>總停車格
-          <a href=""  @click.prevent="totSort"><i class="fa fa-sort-asc" aria-hidden="true"></i><i class="fa fa-sort-desc" aria-hidden="true"></i></a>
+          <a href=""  @click.prevent="sortType('tot')">
+          <i class="fa fa-sort-asc"  v-if="totAsc == false" aria-hidden="true"></i>
+          <i class="fa fa-sort-desc" v-if="totAsc == true" aria-hidden="true"></i>
+          </a>
         </th>
         <th>資料更新時間</th>
       </tr>
@@ -97,11 +127,47 @@ const timeFormat = (val) => {
       </tr>
     </tbody>
   </table>
+  <div class="d-flex gap-8">
+  <ul class="pagination">
+    <li>
+      <a href="" @click.prevent="setPage(currentPage-1)">
+        <i class="fa fa-arrow-left"  :class="{ 'text-gray-300':(currentPage === 1) }">
+        </i>
+      </a>
+    </li>
+
+    <li v-for="(n,i) in totalPage" :key="i">
+      <a href="" 
+      :class="{ 'text-gray-300':(currentPage == n) }" 
+      @click.prevent="setPage(n)">{{ n }}</a>
+    </li>
+
+    <li>
+      <a href="" :class="{ 'text-gray-300':(currentPage === totalPage) }" @click.prevent="setPage(currentPage+1)">
+        <i class="fa fa-arrow-right">
+        </i>
+      </a>
+    </li>
+  </ul>
+  </div>
 </div>
 </template>
 
 <style scoped>
 .app {
   padding: 1rem;
+}
+.text-gray-300{
+  color: gray;
+  text-decoration: none;
+  cursor:default;
+}
+.d-flex{
+  display: flex;
+  justify-content: center;
+}
+.pagination{
+  display: flex;
+  gap:8px;
 }
 </style>
