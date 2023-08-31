@@ -44,7 +44,6 @@ watch(snaSearch, (newSna) => {
   )
   uBikeStops.value = searchStops
   uBikeStops.value.length = 20
-  console.log(uBikeStops.value)
 })
 
 //排序
