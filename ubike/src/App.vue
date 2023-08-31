@@ -15,14 +15,9 @@ import { ref, computed, watch } from 'vue';
 
 const ITEMS_PER_PAGE = 20; // 一頁二十筆資料
 const activePage = ref(1); // 當前分頁
-let itemsInPage = ref([]); // 分頁資料
-let totalPages; // 總分頁數
-let totalPagesArray; // 建立一個跟"總分頁數"相同長度的連續數字陣列
 
 const ITEMS_PER_NAV = 10; // 一次顯示十個數字在導覽列
 const activeNav = ref(1);
-let itemsInNav = ref([]);
-let totalNav;
 
 const uBikeStops = ref([]);
 
@@ -53,6 +48,33 @@ const filteredData = computed(() => {
   return tempArr;
 });
 
+// 總分頁數
+const totalPages = computed(() =>
+  Math.ceil(filteredData.value.length / ITEMS_PER_PAGE)
+);
+
+// 建立一個跟"總分頁數"相同長度的連續數字陣列
+const totalPagesArray = computed(() =>
+  [...Array(totalPages.value).keys()].map((i) => i + 1)
+);
+
+const totalNav = computed(() => Math.ceil(totalPages.value / ITEMS_PER_NAV));
+
+const itemsInNav = computed(() =>
+  totalPagesArray.value.slice(
+    (activeNav.value - 1) * ITEMS_PER_NAV,
+    activeNav.value * ITEMS_PER_NAV
+  )
+);
+
+// 分頁資料
+const itemsInPage = computed(() =>
+  filteredData.value.slice(
+    (activePage.value - 1) * ITEMS_PER_PAGE,
+    activePage.value * ITEMS_PER_PAGE
+  )
+);
+
 const column = ref(''); // 要排序的欄位
 const columnOrderBy = ref(''); // 排序方法
 
@@ -76,7 +98,7 @@ const directionNav = ref('');
 
 // 後十頁
 const nextNav = () => {
-  if (activeNav.value < totalNav) {
+  if (activeNav.value < totalNav.value) {
     activeNav.value++;
     directionNav.value = 'next';
   }
@@ -108,18 +130,8 @@ watch(searchString, (newVal, oldVal) => {
   }
 });
 
-watch([filteredData, activeNav, activePage], (newVal, oldVal) => {
-  totalPages = Math.ceil(newVal[0].length / ITEMS_PER_PAGE);
-  totalPagesArray = [...Array(totalPages).keys()].map((i) => i + 1);
-
-  totalNav = Math.ceil(totalPages / ITEMS_PER_NAV);
-
-  itemsInNav.value = totalPagesArray.slice(
-    (newVal[1] - 1) * ITEMS_PER_NAV,
-    newVal[1] * ITEMS_PER_NAV
-  );
-
-  if (newVal[1] !== oldVal[1]) {
+watch(activeNav, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
     if (directionNav.value === 'next') {
       activePage.value = itemsInNav.value[0];
     } else if (directionNav.value === 'previous') {
@@ -128,11 +140,6 @@ watch([filteredData, activeNav, activePage], (newVal, oldVal) => {
       activePage.value = 1;
     }
   }
-
-  itemsInPage.value = newVal[0].slice(
-    (newVal[2] - 1) * ITEMS_PER_PAGE,
-    newVal[2] * ITEMS_PER_PAGE
-  );
 });
 </script>
 
