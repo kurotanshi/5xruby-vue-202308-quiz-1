@@ -26,12 +26,35 @@ const timeFormat = (val) => {
   const pattern = /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/;
   return val.replace(pattern, '$1/$2/$3 $4:$5:$6');
 };
+
+const filterContent = ref(''); //搜尋內容
+
+const search = computed(() => {
+  return filterContent !== '' ? uBikeStops.value.filter((item,index) => item.sna.includes(filterContent.value)) : uBikeStops.value
+});
+
+const sortAscOfSbi = function(event){
+    uBikeStops.value.sort((a,b) => a.sbi - b.sbi);
+}
+
+const sortDescOfSbi = function(event){
+  uBikeStops.value.sort((a,b) => b.sbi - a.sbi);
+}
+
+const sortAscOfTot = function(event){
+  uBikeStops.value.sort((a,b) => a.tot - b.tot);
+}
+
+const sortDescOfTot = function(event){
+  uBikeStops.value.sort((a,b) => b.tot - a.tot);
+}
+
 </script>
 
 <template>
 <div class="app">
   <p>
-    站點名稱搜尋: <input type="text">
+    站點名稱搜尋: <input type="text" @change="search" v-model="filterContent">
   </p>
 
   <table class="table table-striped">
@@ -41,18 +64,18 @@ const timeFormat = (val) => {
         <th>場站名稱</th>
         <th>場站區域</th>
         <th>目前可用車輛
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="sortAscOfSbi($event)"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="sortDescOfSbi($event)"></i>
         </th>
         <th>總停車格
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="sortAscOfTot($event)"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="sortDescOfTot($event)"></i>
         </th>
         <th>資料更新時間</th>
       </tr>
     </thead>
     <tbody>
-      <tr v-for="s in uBikeStops" :key="s.sno">
+      <tr v-for="s in search" :key="s.sno">
         <td>{{ s.sno }}</td>
         <td>{{ s.sna }}</td>
         <td>{{ s.sarea }}</td>
@@ -62,6 +85,12 @@ const timeFormat = (val) => {
       </tr>
     </tbody>
   </table>
+</div>
+<div class="pagination">
+    <ul>
+    <li><a href="#">Prev</a></li>    
+    <li><a href="#">Next</a></li>
+    </ul>
 </div>
 </template>
 
