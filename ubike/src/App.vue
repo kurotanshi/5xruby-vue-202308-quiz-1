@@ -39,7 +39,6 @@ const uBikeData = ref()   //操作用陣列
 const snaSearch = ref('')
 
 watch(snaSearch, (newSna) => {
-  console.log(newSna)
   const searchStops = uBikeData.value.filter(
     (v) => v.sna.indexOf(newSna) !== -1
   )
@@ -51,15 +50,18 @@ watch(snaSearch, (newSna) => {
 //排序
 
 const sort = (sortWay, sortFor) => {
+  let sortData = []
   if (sortWay === 'asc') {
-    uBikeStops.value.sort((a, b) => {
+    sortData = uBikeData.value.sort((a, b) => {
       return a[sortFor] - b[sortFor]
     })
   } else {
-    uBikeStops.value.sort((a, b) => {
+    sortData = uBikeData.value.sort((a, b) => {
       return b[sortFor] - a[sortFor]
     })
   }
+  uBikeStops.value =JSON.parse(JSON.stringify(sortData))
+  uBikeStops.value.length = 20
 }
 
 // 頁籤
