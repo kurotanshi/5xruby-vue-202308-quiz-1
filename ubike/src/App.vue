@@ -14,11 +14,66 @@ import { ref, computed, watch } from 'vue';
 // snaen：場站名稱(英文)、 aren：地址(英文)、 bemp：空位數量、 act：全站禁用狀態
 
 const uBikeStops = ref([]);
+const searchStr = ref('')
+const filterStops = ref([])
+const currentPage = ref(1)
+const perPageStops = ref(20)
+const pageRange = ref(10)
+const totalPage = ref()
+const paginationRange = ref(0)
+
+const orderByAscending = (stopKey) => {
+  filterStops.value.sort((a, b)=> a[stopKey] - b[stopKey])
+}
+const orderByDescending = (stopKey) => {
+  filterStops.value.sort((a, b)=> b[stopKey] - a[stopKey])
+}
+const getStopsForPage = (pageNumber, apiData) => {
+  const startIndex = (pageNumber - 1) * perPageStops.value
+  const endIndex = startIndex + perPageStops.value
+  const pageData = apiData.slice(startIndex, endIndex)
+
+  return pageData
+}
+const setCurrentPage= (number) => {
+  currentPage.value = number
+}
+const addPaginationRange = () => {
+  if ((paginationRange.value + pageRange.value) <= totalPage.value ) {
+    paginationRange.value += pageRange.value
+  }
+}
+const minusPaginationRange = () => {
+  if (Math.sign(paginationRange.value - pageRange.value) !== -1) {
+    paginationRange.value -= pageRange.value
+  }
+}
+
+watch(
+  searchStr,
+  (newVal) => {
+    const filterStopsName = uBikeStops.value.filter((stop) => {
+      return stop.sna.includes(newVal)
+    })
+
+    filterStops.value = newVal && filterStopsName.length > 0 ? getStopsForPage(1, filterStopsName) : getStopsForPage(1, uBikeStops.value)
+  }
+)
+watch(
+  currentPage,
+  (newVal) => {
+    if(newVal) {
+      filterStops.value = getStopsForPage(newVal, uBikeStops.value)
+    }
+  }
+)
 
 fetch('https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json')
   .then(res => res.text())
   .then(data => {
     uBikeStops.value = JSON.parse(data);
+    totalPage.value = Math.ceil(uBikeStops.value.length / perPageStops.value)
+    filterStops.value = getStopsForPage(currentPage.value, uBikeStops.value)
   });
 
 const timeFormat = (val) => {
@@ -31,7 +86,7 @@ const timeFormat = (val) => {
 <template>
 <div class="app">
   <p>
-    站點名稱搜尋: <input type="text">
+    站點名稱搜尋: <input type="text" v-model="searchStr">
   </p>
 
   <table class="table table-striped">
@@ -41,18 +96,18 @@ const timeFormat = (val) => {
         <th>場站名稱</th>
         <th>場站區域</th>
         <th>目前可用車輛
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="orderByAscending('sbi')"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true" @click="orderByDescending('sbi')"></i>
         </th>
         <th>總停車格
-          <i class="fa fa-sort-asc" aria-hidden="true"></i>
-          <i class="fa fa-sort-desc" aria-hidden="true"></i>
+          <i class="fa fa-sort-asc" aria-hidden="true" @click="orderByAscending('tot')"></i>
+          <i class="fa fa-sort-desc" aria-hidden="true"  @click="orderByDescending('tot')"></i>
         </th>
         <th>資料更新時間</th>
       </tr>
     </thead>
     <tbody>
-      <tr v-for="s in uBikeStops" :key="s.sno">
+      <tr v-for="s in filterStops" :key="s.sno">
         <td>{{ s.sno }}</td>
         <td>{{ s.sna }}</td>
         <td>{{ s.sarea }}</td>
@@ -62,11 +117,46 @@ const timeFormat = (val) => {
       </tr>
     </tbody>
   </table>
+    <ul>
+      <li class="pager"><a href="##" @click="minusPaginationRange"> &lt; </a></li>
+      <template v-for="n in pageRange">
+        <li class="pager" v-if="n + paginationRange < totalPage">
+          <a :class="{'currentPage': (n + paginationRange) === currentPage}" href="#" @click="setCurrentPage((n + paginationRange))">
+            {{ n + paginationRange }}
+          </a>
+        </li>
+      </template>
+      <li class="pager"><a href="##" @click="addPaginationRange"> &gt; </a></li>
+    </ul>
 </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .app {
   padding: 1rem;
+}
+th i {
+  cursor: pointer;
+}
+ul {
+  padding: unset;
+  .pager {
+    font-size: 1.33rem;
+    float: left;
+    display: block;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 30px;
+    margin-right: 5px;
+    border: 1px solid #aaa;
+
+    a {
+      text-decoration: none;
+      &.currentPage {
+        font-weight: bold;
+      }
+    }
+  }
 }
 </style>
