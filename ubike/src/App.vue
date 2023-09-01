@@ -17,7 +17,6 @@ const ITEMS_PER_PAGE = 20; // 一頁二十筆資料
 const activePage = ref(1); // 當前分頁
 
 const ITEMS_PER_NAV = 10; // 一次顯示十個數字在導覽列
-const activeNav = ref(1);
 
 const uBikeStops = ref([]);
 
@@ -60,6 +59,8 @@ const totalPagesArray = computed(() =>
 
 const totalNav = computed(() => Math.ceil(totalPages.value / ITEMS_PER_NAV));
 
+const activeNav = computed(() => Math.ceil(activePage.value / ITEMS_PER_NAV));
+
 const itemsInNav = computed(() =>
   totalPagesArray.value.slice(
     (activeNav.value - 1) * ITEMS_PER_NAV,
@@ -85,7 +86,7 @@ const sortColumn = (col) => {
 
   column.value = col;
 
-  reset();
+  activePage.value = 1;
 
   if (columnOrderBy.value === 'asc') {
     columnOrderBy.value = 'desc';
@@ -94,51 +95,28 @@ const sortColumn = (col) => {
   }
 };
 
-const directionNav = ref('');
-
 // 後十頁
 const nextNav = () => {
   if (activeNav.value < totalNav.value) {
-    activeNav.value++;
-    directionNav.value = 'next';
+    activePage.value = itemsInNav.value[0] + ITEMS_PER_NAV;
   }
 };
 
 // 前十頁
 const previousNav = () => {
   if (activeNav.value > 1) {
-    activeNav.value--;
-    directionNav.value = 'previous';
+    activePage.value = itemsInNav.value[0] - 1;
   }
 };
 
 const setActivePage = (n) => (activePage.value = n);
-
-const reset = () => {
-  activePage.value = 1;
-  activeNav.value = 1;
-  directionNav.value = '';
-};
 
 // 搜尋字串有變動的話 reset
 watch(searchString, (newVal, oldVal) => {
   if (newVal !== oldVal) {
     column.value = '';
     columnOrderBy.value = '';
-
-    reset();
-  }
-});
-
-watch(activeNav, (newVal, oldVal) => {
-  if (newVal !== oldVal) {
-    if (directionNav.value === 'next') {
-      activePage.value = itemsInNav.value[0];
-    } else if (directionNav.value === 'previous') {
-      activePage.value = itemsInNav.value[itemsInNav.value.length - 1];
-    } else {
-      activePage.value = 1;
-    }
+    activePage.value = 1;
   }
 });
 </script>
